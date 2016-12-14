@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>FilesystemDemo</name>
+	<comment>NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+	<projects>
+		<project>SwirldsPlatform</project>
+		<project>fc</project>
+		<project>fcfs</project>
+		<project>fcutil</project>
+		<project>abcl-fasl</project>
+		<project>fcfs-dep-fasl</project>
+		<project>fcdb</project>
+		<project>fcdb-dep-fasl</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+</projectDescription>

@@ -89,7 +89,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
 		platform.createTransaction(transaction, null);
 		String lastReceived = "";
 
-		while (true) {
+		while (platform.isRunning()) {
 			HelloSwirldDemoState state = (HelloSwirldDemoState) platform
 					.getState();
 			String received = state.getReceived();

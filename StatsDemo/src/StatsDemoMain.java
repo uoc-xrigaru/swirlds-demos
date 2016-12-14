@@ -91,7 +91,7 @@ public class StatsDemoMain implements SwirldMain {
 	 * @param message
 	 *            the String to write
 	 */
-	private void writeToConsoleFile(boolean append, String message) {
+	private void writeToConsoleAndFile(boolean append, String message) {
 		BufferedWriter file = null;
 		try {// create or append to file in current directory
 			path = System.getProperty("user.dir") + File.separator + "StatsDemo"
@@ -128,16 +128,16 @@ public class StatsDemoMain implements SwirldMain {
 	 */
 	void write(int mode, String heading, String comment, String stat) {
 		switch (mode) {
-			case 1: // write the definition of a statistic (at the top)
-				writeToConsoleFile(true, String.format("%13s:,%s", heading,
+			case 1 : // write the definition of a statistic (at the top)
+				writeToConsoleAndFile(true, String.format("%13s:,%s", heading,
 						comment + System.getProperty("line.separator")));
 				break;
-			case 2: // write a column heading
-				writeToConsoleFile(true,
+			case 2 : // write a column heading
+				writeToConsoleAndFile(true,
 						String.format(",%" + stat.length() + "s", heading));
 				break;
-			case 3:// write one statistic
-				writeToConsoleFile(true, "," + stat);
+			case 3 :// write one statistic
+				writeToConsoleAndFile(true, "," + stat);
 				break;
 		}
 	}
@@ -157,7 +157,7 @@ public class StatsDemoMain implements SwirldMain {
 		if (mode == 1) {
 			write(mode, "filename", path, "");
 		} else {
-			writeToConsoleFile(true, ",");
+			writeToConsoleAndFile(true, ",");
 		}
 		write(mode, "time", //
 				"the time at which the stats are written",
@@ -241,7 +241,7 @@ public class StatsDemoMain implements SwirldMain {
 		write(mode, "trans/event", //
 				"number of transactions in each event",
 				String.format("%12d", transPerEvent));
-		writeToConsoleFile(true, System.getProperty("line.separator"));
+		writeToConsoleAndFile(true, System.getProperty("line.separator"));
 	}
 
 	// ///////////////////////////////////////////////////////////////////
@@ -261,21 +261,24 @@ public class StatsDemoMain implements SwirldMain {
 	 */
 	@Override
 	public void init(Platform platform, int id) {
+		long syncDelay;
 		this.platform = platform;
 		String[] pars = platform.getParameters();
 		selfId = id;
 		headless = (pars[0].trim().equals("1"));
 		writePeriod = Integer.parseInt(pars[1].trim());
-		bytesPerTrans = Integer.parseInt(pars[2].trim());
-		transPerEvent = Integer.parseInt(pars[3].trim());
+		syncDelay = Integer.parseInt(pars[2].trim());
+		bytesPerTrans = Integer.parseInt(pars[3].trim());
+		transPerEvent = Integer.parseInt(pars[4].trim());
 		addressBook = platform.getState().getAddressBookCopy();
 		if (!headless) { // create the window, make it visible
 			console = platform.createConsole(true);
 		}
 		transaction = new byte[bytesPerTrans];
 		platform.setAbout( // set the browser's "about" box
-				"Stats Demo v. 1.0\nThis writes statistics to a log file,"
+				"Stats Demo v. 1.1\nThis writes statistics to a log file,"
 						+ " such as the number of transactions per second.");
+		platform.setSleepAfterSync(syncDelay);
 	}
 
 	/**
@@ -283,10 +286,10 @@ public class StatsDemoMain implements SwirldMain {
 	 */
 	@Override
 	public void run() {
-		writeToConsoleFile(false, ""); // erase the old file, if any
+		writeToConsoleAndFile(false, ""); // erase the old file, if any
 		writeAll(1); // write the definitions at the top
 		writeAll(2); // write the column headings
-		while (true) { // keep logging forever
+		while (platform.isRunning()) { // keep logging forever
 			try {
 				writeAll(3); // write a row of numbers
 				Thread.sleep(writePeriod); // add new rows infrequently

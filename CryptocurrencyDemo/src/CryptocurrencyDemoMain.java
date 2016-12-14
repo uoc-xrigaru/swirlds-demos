@@ -26,6 +26,8 @@ import com.swirlds.platform.SwirldState;
  * price between 1 and 127 cents (inclusive).
  */
 public class CryptocurrencyDemoMain implements SwirldMain {
+	// time to delay between screen updates
+	private final long		screenUpdateDelay	= 250;
 	// the app is run by this
 	private Platform		platform;
 	// ID number for this member
@@ -33,11 +35,13 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 	// a console window for text output
 	private Console			console;
 	// used to randomly choose ask/bid and prices
-	private Random			rand		= new Random();
+	private Random			rand				= new Random();
 	// so user can use arrows and spacebar
-	private GuiKeyListener	keyListener	= new GuiKeyListener();
+	private GuiKeyListener	keyListener			= new GuiKeyListener();
 	// if not -1, then need to create a transaction to sync fast or slow
-	private byte			speedCmd	= -1;
+	private byte			speedCmd			= -1;
+	// is the simulation running fast now?
+	private boolean isFast = false;
 
 	/**
 	 * Listen for input from the keyboard, and remember the last key typed.
@@ -50,9 +54,11 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 		@Override
 		public void keyPressed(KeyEvent e) {
 			if (e.getKeyChar() == 'F' || e.getKeyChar() == 'f') {
+				isFast = true;
 				speedCmd = (byte) CryptocurrencyDemoState.TransType.fast
 						.ordinal();
 			} else if (e.getKeyChar() == 'S' || e.getKeyChar() == 's') {
+				isFast = false;
 				speedCmd = (byte) CryptocurrencyDemoState.TransType.slow
 						.ordinal();
 			}
@@ -124,15 +130,15 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 	public void run() {
 		long seq = 0;
 		// print the latest trades to the console, 4 times a second, forever
-		while (true) {
+		while (platform.isRunning()) {
 			CryptocurrencyDemoState state = (CryptocurrencyDemoState) platform
 					.getState();
 			console.setHeading(" Cryptocurrency and Stock Market Demo\n"
-					+ " Press F for fast sync, S for slow\n"
+					+ " Press F for fast sync, S for slow, (currently "
+					+ (isFast ? "fast" : "slow") + ")\n"
 					+ String.format(" %d", (int) platform.getTransPerSecond())
 					+ " transactions per second for member " + selfId + "\n\n"
-					+ " count, ticker symbol, price, direction, change, change %, seller->buyer"
-					+ "        name, savings, shares owned");
+					+ " count  ticker  price change  change%  seller->buyer");
 			long lastSeq = state.getNumTrades();
 			for (; seq < lastSeq; seq++) {
 				String s = state.getTrade(seq);
@@ -141,7 +147,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 				}
 			}
 			try {
-				Thread.sleep(250);
+				Thread.sleep(screenUpdateDelay);
 			} catch (Exception e) {
 			}
 		}

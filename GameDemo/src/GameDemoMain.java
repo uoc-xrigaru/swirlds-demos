@@ -15,7 +15,6 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.net.InetAddress;
 import java.time.Instant;
 
 import javax.swing.JFrame;
@@ -23,6 +22,7 @@ import javax.swing.JPanel;
 
 import com.swirlds.platform.AddressBook;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.Network;
 import com.swirlds.platform.Platform;
 import com.swirlds.platform.SwirldMain;
 import com.swirlds.platform.SwirldState;
@@ -38,28 +38,31 @@ import com.swirlds.platform.SwirldState;
  * WASD key will turn off automatic movement.
  */
 public class GameDemoMain implements SwirldMain {
+	// delay after each time through the main game loop (which updates screen, etc)
+	// update 10 times/sec;
+	private long	gameLoopDelay	= 100;															 
 	// the app is run by this
 	public Platform	platform;
 	// ID number for this member
 	public int		selfId;
 	// so user can use arrows and spacebar
-	GuiKeyListener	keyListener	= new GuiKeyListener();
+	GuiKeyListener	keyListener		= new GuiKeyListener();
 	// the entire window
 	JFrame			frame;
 	// should computer play for the user?
-	boolean			automove	= true;
+	boolean			automove		= true;
 
 	// the following are used in paintComponent to estimate transactions per second
 
 	// transactions per second
-	double			tps			= 0;
+	double			tps				= 0;
 	// exponentially weighted recent average
-	double			tpsSmooth	= 0;
+	double			tpsSmooth		= 0;
 	// discount factor
-	double			tpsGamma	= 0.9;
+	double			tpsGamma		= 0.9;
 
 	long			oldNumTotalTrans;
-	Instant			oldTime		= Instant.now();
+	Instant			oldTime			= Instant.now();
 
 	/**
 	 * Listen for input from the keyboard, and remember the last key typed.
@@ -128,14 +131,11 @@ public class GameDemoMain implements SwirldMain {
 				g.setFont(new Font(Font.MONOSPACED, 12, 12));
 				g.drawLine(0, height1, width, height1);
 
-				String ip = "";
-				try {
-					ip = (InetAddress.getLocalHost().getHostAddress());
-				} catch (Exception e) {
-				} // UnknownHostException
+				// the following call is more reliable than (InetAddress.getLocalHost().getHostAddress());
+				String ip = Network.getOwnIPAddress();
 
 				int row = 1;
-				int col = 190; // width/3;
+				int col = 190;
 				g.drawString(
 						"Trans/sec:  " + (long) platform.getTransPerSecond(),
 						col, row++ * textHeight - 3);
@@ -251,7 +251,7 @@ public class GameDemoMain implements SwirldMain {
 	 */
 	@Override
 	public void run() {
-		while (true) {
+		while (platform.isRunning()) {
 			int dx, dy;
 			// get a reference to the state repeatedly, because it changes sometimes
 			GameDemoState state = (GameDemoState) platform.getState();
@@ -272,7 +272,7 @@ public class GameDemoMain implements SwirldMain {
 			}
 			keyboardAndRedraw(false, true, null);
 			try {
-				Thread.sleep(100); // update 10 times/sec
+				Thread.sleep(gameLoopDelay);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

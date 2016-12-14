@@ -132,7 +132,7 @@ public class CryptocurrencyDemoState implements SwirldState {
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	}
-
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -326,7 +326,7 @@ public class CryptocurrencyDemoState implements SwirldState {
 		numTradesStored = Math.min(MAX_TRADES, 1 + numTradesStored);
 		lastTradeIndex = (lastTradeIndex + 1) % MAX_TRADES;
 		String tradeDescription = String.format(
-				"%6d  %4s %4.2f %s %4.2f %5.2f%% %s->%s      %5s has $%-8.2f and shares: %s",
+				"%6d %6s %7.2f %s %4.2f %7.2f%% %7s->%s      %5s has $%-8.2f and shares: %s",
 				numTrades, tickerSymbol[tradeStock], tradePrice / 100., dir,
 				Math.abs(change / 100.), Math.abs(changePerc), sellerNickname,
 				buyerNickname, selfName, wallet[(int) id] / 100.,
