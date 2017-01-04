@@ -36,7 +36,6 @@ import java.util.function.BiFunction;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import com.swirlds.platform.Address;
 import com.swirlds.platform.AddressBook;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.Event;
@@ -214,13 +213,13 @@ public class HashgraphDemoMain implements SwirldMain {
 			print(g, "%5.3f sec, propagation time", createCons - recCons);
 			print(g, "%5.3f sec, create to consensus", createCons);
 			print(g, "%5.3f sec, receive to consensus", recCons);
-			print(g, "Internal address: " + Network.getOwnIPAddress() + ":"
+			print(g, "Internal: " + Network.getInternalIPAddress() + " : "
 					+ platform.getAddress().getPortInternalIpv4(), 0);
-			print(g, "External address: "
-					+ Address.ipString(
-							platform.getAddress().getAddressExternalIpv4())
-					+ ":" + platform.getAddress().getPortExternalIpv4(), 0);
-			// print(g, "Listening on: " + platform.getEndpoint(), 0);
+			print(g, "External: " + (Network.getExternalIpAddress().equals("")
+					? ""
+					: Network.getExternalIpAddress() + " : "
+							+ platform.getAddress().getPortExternalIpv4()),
+					0);
 
 			int height1 = (row - 1) * textLineHeight;    // text area at the top
 			int height2 = getHeight() - height1; // the main display, below the text

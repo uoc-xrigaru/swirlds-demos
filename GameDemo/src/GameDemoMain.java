@@ -39,8 +39,9 @@ import com.swirlds.platform.SwirldState;
  */
 public class GameDemoMain implements SwirldMain {
 	// delay after each time through the main game loop (which updates screen, etc)
-	// update 10 times/sec;
-	private long	gameLoopDelay	= 100;															 
+	private long	gameLoopDelay	= 100;																																																																	 // update
+																																																																											 // 10
+																																																																											 // times/sec;
 	// the app is run by this
 	public Platform	platform;
 	// ID number for this member
@@ -131,9 +132,6 @@ public class GameDemoMain implements SwirldMain {
 				g.setFont(new Font(Font.MONOSPACED, 12, 12));
 				g.drawLine(0, height1, width, height1);
 
-				// the following call is more reliable than (InetAddress.getLocalHost().getHostAddress());
-				String ip = Network.getOwnIPAddress();
-
 				int row = 1;
 				int col = 190;
 				g.drawString(
@@ -142,7 +140,19 @@ public class GameDemoMain implements SwirldMain {
 				g.drawString(
 						"Events/sec: " + (long) platform.getEventsPerSecond(),
 						col, row++ * textHeight - 3);
-				g.drawString("Local: " + ip, col, row++ * textHeight - 3);
+				// getInternalIPAddress() is more reliable than
+				// (InetAddress.getLocalHost().getHostAddress());
+				g.drawString(
+						"Internal: " + Network.getInternalIPAddress() + " : "
+								+ platform.getAddress().getPortInternalIpv4(),
+						col, row++ * textHeight - 3);
+				g.drawString("External: "
+						+ (Network.getExternalIpAddress().equals("")
+								? ""
+								: Network.getExternalIpAddress() + " : "
+										+ platform.getAddress()
+												.getPortExternalIpv4()),
+						col, row++ * textHeight - 3);
 				g.drawString("Arrows/WASD move", col, row++ * textHeight - 3);
 				g.drawString("Spacebar automoves", col, row++ * textHeight - 3);
 
