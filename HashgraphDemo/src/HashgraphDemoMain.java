@@ -51,80 +51,81 @@ import com.swirlds.platform.SwirldState;
  */
 public class HashgraphDemoMain implements SwirldMain {
 	// delay after each screen update (250 means update 4 times per second)
-	private static final long	screenUpdateDelay	= 250;
+	private static final long screenUpdateDelay = 250;
 	// outline of labels
-	static final Color			LABEL_OUTLINE		= new Color(255, 255, 255);
+	static final Color LABEL_OUTLINE = new Color(255, 255, 255);
 	// unknown-fame witness, non-cons
-	static final Color			LIGHT_RED			= new Color(192, 0, 0);
-	static final Color			DARK_RED			= new Color(128, 0, 0);
+	static final Color LIGHT_RED = new Color(192, 0, 0);
+	static final Color DARK_RED = new Color(128, 0, 0);
 	// unknown-fame witness, consensus
-	static final Color			LIGHT_GREEN			= new Color(0, 192, 0);
+	static final Color LIGHT_GREEN = new Color(0, 192, 0);
 	// famous witness, non-consensus
-	static final Color			DARK_GREEN			= new Color(0, 128, 0);
+	static final Color DARK_GREEN = new Color(0, 128, 0);
 	// famous witness, consensus
-	static final Color			LIGHT_BLUE			= new Color(0, 0, 192);
+	static final Color LIGHT_BLUE = new Color(0, 0, 192);
 	// non-famous witness, non-consensus
-	static final Color			DARK_BLUE			= new Color(0, 0, 128);
+	static final Color DARK_BLUE = new Color(0, 0, 128);
 	// non-famous witness, consensus
-	static final Color			LIGHT_GRAY			= new Color(160, 160, 160);
+	static final Color LIGHT_GRAY = new Color(160, 160, 160);
 	// non-witness, non-consensus
-	static final Color			DARK_GRAY			= new Color(0, 0, 0);
+	static final Color DARK_GRAY = new Color(0, 0, 0);
 	// non-witness, consensus
-	public Platform				platform;
+	public Platform platform;
 	// app is run by this
-	public int					selfId;
+	public int selfId;
 	// ID for this member the entire window, including Swirlds menu, Picture, checkboxes
-	JFrame						window;
+	JFrame window;
 	// the JFrame with the hashgraph plus text at the top
-	Picture						picture;
+	Picture picture;
 	// paintComponent will draw this copy of the set of events
-	private Event[]				eventsCache;
+	private Event[] eventsCache;
 	// the number of members in the
 	// addressBook
-	private int					numMembers			= -1;
+	private int numMembers = -1;
 	// the nicknames of all the members
-	private String[]			names;
+	private String[] names;
 
 	// the following allow each member to have multiple columns so lines don't cross
 
 	// number of columns (more than number of members if preventCrossings)
-	private int					numColumns;
+	private int numColumns;
 	// mems2col[a][b] = which member-b column is adjacent to some member-a column
-	private int					mems2col[][];
+	private int mems2col[][];
 	// col2mems[c][0] = the member for column c, col2mems[c][1] = second member or -1 if none
-	private int					col2mems[][];
+	private int col2mems[][];
 
 	// if checked, this member calls to gossip once per second
-	private Checkbox			slowCheckbox;
+	private Checkbox slowCheckbox;
 	// if checked, freeze the display (don't update it)
-	private Checkbox			freezeCheckbox;
+	private Checkbox freezeCheckbox;
+	// if checked, color vertices only green (non-consensus) or blue (consensus)
+	private Checkbox simpleColorsCheckbox;
 	// if checked, use multiple columns per member to void lines crossing
-	private Checkbox			expandCheckbox;
+	private Checkbox expandCheckbox;
 
 	// the following control which labels to print on each vertex
 
 	// the round number for the event
-	private Checkbox			labelRoundCheckbox;
+	private Checkbox labelRoundCheckbox;
 	// the consensus round received for the event
-	private Checkbox			labelRoundRecCheckbox;
+	private Checkbox labelRoundRecCheckbox;
 	// the consensus order number for the event
-	private Checkbox			labelConsOrderCheckbox;
+	private Checkbox labelConsOrderCheckbox;
 	// the consensus time stamp for the event
-	private Checkbox			labelConsTimestampCheckbox;
+	private Checkbox labelConsTimestampCheckbox;
 	// the generation number for the event
-	private Checkbox			labelGenerationCheckbox;
+	private Checkbox labelGenerationCheckbox;
 	// the ID number of the member who created the event
-	private Checkbox			labelCreatorCheckbox;
+	private Checkbox labelCreatorCheckbox;
 	// the sequence number for that creator (starts at 0)
-	private Checkbox			labelSeqCheckbox;
+	private Checkbox labelSeqCheckbox;
 
 	// only draw this many events, at most
-	private TextField			eventLimit;
+	private TextField eventLimit;
 
 	// format the consensusTimestamp label
-	DateTimeFormatter			formatter			= DateTimeFormatter
-			.ofPattern("H:m:s.n").withLocale(Locale.US)
-			.withZone(ZoneId.systemDefault());
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("H:m:s.n")
+			.withLocale(Locale.US).withZone(ZoneId.systemDefault());
 
 	/**
 	 * Return the color for an event based on calculations in the consensus algorithm A non-witness is gray,
@@ -136,6 +137,9 @@ public class HashgraphDemoMain implements SwirldMain {
 	 * @return its color
 	 */
 	private Color eventColor(Event event) {
+		if (simpleColorsCheckbox.getState()) { // if checkbox checked
+			return event.isConsensus() ? LIGHT_BLUE : LIGHT_GREEN;
+		}
 		if (!event.isWitness()) {
 			return event.isConsensus() ? DARK_GRAY : LIGHT_GRAY;
 		}
@@ -153,12 +157,12 @@ public class HashgraphDemoMain implements SwirldMain {
 	 * 
 	 */
 	private class Picture extends JPanel {
-		private static final long	serialVersionUID	= 1L;
-		int							ymin, ymax, width, n;
-		double						r;
-		long						minGen, maxGen;
+		private static final long serialVersionUID = 1L;
+		int ymin, ymax, width, n;
+		double r;
+		long minGen, maxGen;
 		// where to draw next in the window, and the font height
-		int							row, col, textLineHeight;
+		int row, col, textLineHeight;
 
 		// find x position on the screen for event e2 which has a parent or child of e1
 		private int xpos(Event e1, Event e2) {
@@ -173,8 +177,7 @@ public class HashgraphDemoMain implements SwirldMain {
 
 		// find y position on the screen for an event
 		private int ypos(Event event) {
-			return (event == null)
-					? -100
+			return (event == null) ? -100
 					: (int) (ymax
 							- r * (1 + 2 * (event.getGeneration() - minGen)));
 		}
@@ -215,10 +218,10 @@ public class HashgraphDemoMain implements SwirldMain {
 			print(g, "%5.3f sec, receive to consensus", recCons);
 			print(g, "Internal: " + Network.getInternalIPAddress() + " : "
 					+ platform.getAddress().getPortInternalIpv4(), 0);
-			print(g, "External: " + (Network.getExternalIpAddress().equals("")
-					? ""
-					: Network.getExternalIpAddress() + " : "
-							+ platform.getAddress().getPortExternalIpv4()),
+			print(g, "External: "
+					+ (Network.getExternalIpAddress().equals("") ? ""
+							: Network.getExternalIpAddress() + " : " + platform
+									.getAddress().getPortExternalIpv4()),
 					0);
 
 			int height1 = (row - 1) * textLineHeight;    // text area at the top
@@ -378,13 +381,13 @@ public class HashgraphDemoMain implements SwirldMain {
 		// fix corner cases missed by the formulas here
 		if (numMembers == 1) {
 			numColumns = 1;
-			col2mems = new int[][]{{0, -1}};
-			mems2col = new int[][]{{0}};
+			col2mems = new int[][] { { 0, -1 } };
+			mems2col = new int[][] { { 0 } };
 			return;
 		} else if (numMembers == 2) {
 			numColumns = 2;
-			col2mems = new int[][]{{0, -1}, {1, -1}};
-			mems2col = new int[][]{{0, 1}, {0, 0}};
+			col2mems = new int[][] { { 0, -1 }, { 1, -1 } };
+			mems2col = new int[][] { { 0, 1 }, { 0, 0 } };
 			return;
 		}
 
@@ -489,6 +492,8 @@ public class HashgraphDemoMain implements SwirldMain {
 		slowCheckbox = cb.apply(p++,
 				"slow: this member initiates gossip once a second");
 		freezeCheckbox = cb.apply(p++, "freeze: don't change this window");
+		simpleColorsCheckbox = cb.apply(p++,
+				"simple colors: blue for consensus, green for not");
 		expandCheckbox = cb.apply(p++,
 				"expand: draw more so lines don't cross");
 		labelRoundCheckbox = cb.apply(p++, "Labels: Round created");
@@ -514,11 +519,11 @@ public class HashgraphDemoMain implements SwirldMain {
 		limitRow.add(eventLimit, BorderLayout.WEST);
 		limitRow.add(new Label(" events"), BorderLayout.WEST);
 		Panel inputs = new Panel(new GridLayout(0, 1));
-		Component[] comps = new Component[]{slowCheckbox, freezeCheckbox,
-				expandCheckbox, labelRoundCheckbox, labelRoundRecCheckbox,
-				labelConsOrderCheckbox, labelConsTimestampCheckbox,
-				labelGenerationCheckbox, labelCreatorCheckbox, labelSeqCheckbox,
-				limitRow};
+		Component[] comps = new Component[] { slowCheckbox, freezeCheckbox,
+				simpleColorsCheckbox, expandCheckbox, labelRoundCheckbox,
+				labelRoundRecCheckbox, labelConsOrderCheckbox,
+				labelConsTimestampCheckbox, labelGenerationCheckbox,
+				labelCreatorCheckbox, labelSeqCheckbox, limitRow };
 		for (Component c : comps) {
 			inputs.add(c, BorderLayout.WEST);
 		}

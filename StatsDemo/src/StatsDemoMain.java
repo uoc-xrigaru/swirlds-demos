@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
+import java.util.Random;
 
 import com.swirlds.platform.AddressBook;
 import com.swirlds.platform.Browser;
@@ -36,30 +37,30 @@ public class StatsDemoMain implements SwirldMain {
 	// the first four come from the parameters in the config.txt file
 
 	// should this run with no windows?
-	private boolean		headless		= false;
+	private boolean headless = false;
 	// number of milliseconds between writes to the log file
-	private long		writePeriod		= 3000;
+	private long writePeriod = 3000;
 	// bytes in each transaction
-	private int			bytesPerTrans	= 1;
+	private int bytesPerTrans = 1;
 	// transactions in each Event
-	private int			transPerEvent	= 1;
+	private int transPerEvent = 1;
 
 	// path and filename of the .csv file to write to
-	private String		path;
+	private String path;
 	// number of members running this app
-	private int			numMembers		= -1;
+	private int numMembers = -1;
 	// number of members running this app on this local machine
-	private int			numLocalMembers	= -1;
+	private int numLocalMembers = -1;
 	// ID number for this member
-	private int			selfId;
+	private int selfId;
 	// the app is run by this
-	private Platform	platform;
+	private Platform platform;
 	// the address book passed in by the Platform at the start
-	private AddressBook	addressBook;
+	private AddressBook addressBook;
 	// a console window for text output
-	private Console		console			= null;
-	// the transaction to repeatedly create
-	private byte[]		transaction;
+	private Console console = null;
+	// used to make the transactions random, so they won't cheat and shrink when zipped
+	private Random random = new java.util.Random();
 
 	/**
 	 * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
@@ -128,15 +129,15 @@ public class StatsDemoMain implements SwirldMain {
 	 */
 	void write(int mode, String heading, String comment, String stat) {
 		switch (mode) {
-			case 1 : // write the definition of a statistic (at the top)
-				writeToConsoleAndFile(true, String.format("%13s:,%s", heading,
+			case 1: // write the definition of a statistic (at the top)
+				writeToConsoleAndFile(true, String.format("%14s:,%s", heading,
 						comment + System.getProperty("line.separator")));
 				break;
-			case 2 : // write a column heading
+			case 2: // write a column heading
 				writeToConsoleAndFile(true,
 						String.format(",%" + stat.length() + "s", heading));
 				break;
-			case 3 :// write one statistic
+			case 3:// write one statistic
 				writeToConsoleAndFile(true, "," + stat);
 				break;
 		}
@@ -148,6 +149,9 @@ public class StatsDemoMain implements SwirldMain {
 	 * @mode which of the three types to write
 	 */
 	void writeAll(int mode) {
+		AddressBook addr = platform.getState().getAddressBookCopy();
+		numMembers = addr.getSize();
+		numLocalMembers = addr.getOwnHostCount();
 		DateTimeFormatter formatter = DateTimeFormatter
 				.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.US)
 				.withZone(ZoneId.systemDefault());
@@ -167,10 +171,23 @@ public class StatsDemoMain implements SwirldMain {
 				String.format("%10d", platform.getNumTrans()));
 		write(mode, "secR2C",//
 				"time from receiving an event to knowing its consensus (in seconds)",
-				String.format("%7.2f", platform.getAvgReceivedConsensusTime()));
+				String.format("%8.3f", platform.getAvgReceivedConsensusTime()));
 		write(mode, "secC2C",//
 				"time from creating an event to knowing its consensus (in seconds)",
-				String.format("%7.2f", platform.getAvgCreatedConsensusTime()));
+				String.format("%8.3f", platform.getAvgCreatedConsensusTime()));
+		write(mode, "secSync",//
+				"duration of average successful sync (in seconds)",
+				String.format("%8.3f", platform.getAvgSyncDuration()));
+		write(mode, "secRound",//
+				"duration of average round (in seconds)",
+				String.format("%8.3f", platform.getAvgRoundDuration()));
+		write(mode, "secPing",//
+				"average time for a round trip message between 2 computers (in seconds)",
+				String.format("%9.6f", platform.getAvgPingSeconds()));
+		// write(mode, "secPing[]",//
+		// "average time for a round trip message to each computer (in seconds)",
+		// String.format("%9s",
+		// Arrays.toString(platform.getPingSeconds())));
 		write(mode, "bytes/sec",//
 				"number of bytes in the transactions received per second",
 				String.format("%12.2f",
@@ -241,6 +258,29 @@ public class StatsDemoMain implements SwirldMain {
 		write(mode, "trans/event", //
 				"number of transactions in each event",
 				String.format("%12d", transPerEvent));
+		write(mode, "simCallSyncs", //
+				"max number of syncs this can initiate simultaneously",
+				String.format("%12d", Platform.getMaxOutgoingSyncs()));
+		write(mode, "dedup", //
+				"avoid duplicates: a list of event counts is sent every this many events (0=never)",
+				String.format("%5d", Platform.getDedupFreq()));
+		write(mode, "cEvents/sec",//
+				"number of events per second created by this node",
+				String.format("%12.2f", platform.geteventsCreatedPerSecond()));
+		write(mode, "secC2R",//
+				"time from a created event from another member to it being received and veryfing the signature (in seconds)",
+				String.format("%8.3f", platform.getAvgCreatedReceivedTime()));
+		write(mode, "secC2RC",//
+				"time from a created event from another member to it being received and and having consensus for it (in seconds)",
+				String.format("%8.3f",
+						platform.getAvgCreatedReceivedConsensusTime()));
+		write(mode, "secR2nR",//
+				"time from an event received in one round, to an event received in the next round (in seconds)",
+				String.format("%8.3f",
+						platform.getAvgFirstEventInRoundReceivedTime()));
+		write(mode, "secR2F",//
+				"time from an event received, to all the famous witnesses being known (in seconds)",
+				String.format("%8.3f", platform.getReceivedFamousTime()));
 		writeToConsoleAndFile(true, System.getProperty("line.separator"));
 	}
 
@@ -251,7 +291,9 @@ public class StatsDemoMain implements SwirldMain {
 	 */
 	@Override
 	public void preEvent() {
+		byte[] transaction = new byte[bytesPerTrans];
 		for (int i = 0; i < transPerEvent; i++) {
+			random.nextBytes(transaction); // make it non-compressible
 			platform.createTransaction(transaction, null);
 		}
 	}
@@ -265,16 +307,15 @@ public class StatsDemoMain implements SwirldMain {
 		this.platform = platform;
 		String[] pars = platform.getParameters();
 		selfId = id;
-		headless = (pars[0].trim().equals("1"));
-		writePeriod = Integer.parseInt(pars[1].trim());
-		syncDelay = Integer.parseInt(pars[2].trim());
-		bytesPerTrans = Integer.parseInt(pars[3].trim());
-		transPerEvent = Integer.parseInt(pars[4].trim());
+		headless = (pars[0].equals("1"));
+		writePeriod = Integer.parseInt(pars[1]);
+		syncDelay = Integer.parseInt(pars[2]);
+		bytesPerTrans = Integer.parseInt(pars[3]);
+		transPerEvent = Integer.parseInt(pars[4]);
 		addressBook = platform.getState().getAddressBookCopy();
 		if (!headless) { // create the window, make it visible
 			console = platform.createConsole(true);
 		}
-		transaction = new byte[bytesPerTrans];
 		platform.setAbout( // set the browser's "about" box
 				"Stats Demo v. 1.1\nThis writes statistics to a log file,"
 						+ " such as the number of transactions per second.");

@@ -36,9 +36,9 @@ public class HelloSwirldDemoState implements SwirldState {
 	// The "state" is just a list of the strings in all transactions,
 	// listed in the order received here, which will eventually be
 	// the consensus order of the community.
-	private List<String>	strings	= Collections
+	private List<String> strings = Collections
 			.synchronizedList(new ArrayList<String>());
-	private AddressBook		addressBook;
+	private AddressBook addressBook;
 
 	public synchronized List<String> getStrings() {
 		return strings;

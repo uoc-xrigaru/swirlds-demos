@@ -1,3 +1,4 @@
+
 /*
  * This file is public domain.
  *
@@ -13,63 +14,65 @@ import java.util.*;
 
 import com.swirlds.platform.*;
 
-/** A simple text editor application that saves its files to a Swirlds
- *  Fast Copyable Filesystem. Every save is a transaction propagated across
- *  the network to peers. Thus, the filesystem is kept synchronized across
- *  all nodes.
+/**
+ * A simple text editor application that saves its files to a Swirlds Fast Copyable Filesystem. Every save
+ * is a transaction propagated across the network to peers. Thus, the filesystem is kept synchronized across
+ * all nodes.
  */
 public class FilesystemDemoMain implements SwirldMain {
-  public Platform platform;
-  private int platformId;
+	public Platform platform;
+	private int platformId;
 
-  /**
-   * This is just for debugging: it allows the app to run in Eclipse. If the
-   * config.txt exists and lists a particular SwirldMain class as the one to
-   * run, then it can run in Eclipse (with the green triangle icon).
-   *
-   * @param args
-   *            these are not used
-   */
-  public static void main(String[] args) {
-    Browser.main(null);
-  }
+	/**
+	 * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
+	 * particular SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle
+	 * icon).
+	 *
+	 * @param args
+	 *            these are not used
+	 */
+	public static void main(String[] args) {
+		Browser.main(null);
+	}
 
-  public void preEvent() {}
+	public void preEvent() {
+	}
 
-  public void init(Platform platform, int id) {
-    this.platform = platform;
-    this.platformId = id;
-    platform.setAbout("Filesystem Demo v. 1.0\n"); // set the browser's "about" box
-    platform.setSleepAfterSync(250); //milliseconds
-  }
+	public void init(Platform platform, int id) {
+		this.platform = platform;
+		this.platformId = id;
+		platform.setAbout("Filesystem Demo v. 1.0\n"); // set the browser's "about" box
+		platform.setSleepAfterSync(250); // milliseconds
+	}
 
-  /** Start the text editor GUI. Then update its status bar every time
-   *  the underlying filesystem is found to have changed, indicating that files
-   *  have arrived from the network (or local node).
-   */
-  public void run() {
-    try {
-      TextEditor wp = TextEditor.openOn(platform);
-      byte[] fsHash = fsHash();
-      while(platform.isRunning()) {
-        Thread.sleep(1000);
-        byte[] newHash = fsHash();
-        if (!Arrays.equals(fsHash, newHash))
-          wp.status(String.format("filesystem changed at %s", new Date()));
-        fsHash = newHash;
-      }
-    } catch (InterruptedException e) {
-      System.err.println(String.format("[FilesystemDemo %d] interrupted",
-                                       platformId));
-    }
-  }
+	/**
+	 * Start the text editor GUI. Then update its status bar every time the underlying filesystem is found
+	 * to have changed, indicating that files have arrived from the network (or local node).
+	 */
+	public void run() {
+		try {
+			TextEditor wp = TextEditor.openOn(platform);
+			byte[] fsHash = fsHash();
+			while (platform.isRunning()) {
+				Thread.sleep(1000);
+				byte[] newHash = fsHash();
+				if (!Arrays.equals(fsHash, newHash))
+					wp.status(String.format("filesystem changed at %s",
+							new Date()));
+				fsHash = newHash;
+			}
+		} catch (InterruptedException e) {
+			System.err.println(String.format("[FilesystemDemo %d] interrupted",
+					platformId));
+		}
+	}
 
-  /** The hash of (the root directory of) the fast copyable filesystem */
-  private byte[] fsHash() {
-    return ((FilesystemDemoState) platform.getState()).getFS().fcNamei("/");
-  }
+	/** The hash of (the root directory of) the fast copyable filesystem */
+	private byte[] fsHash() {
+		return ((FilesystemDemoState) platform.getState()).getFS().fcNamei("/");
+	}
 
-  public SwirldState newState() {
-    return new FilesystemDemoState();
-  }
+	public SwirldState newState() {
+		return new FilesystemDemoState();
+	}
 }

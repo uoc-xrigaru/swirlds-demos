@@ -30,34 +30,34 @@ import com.swirlds.platform.Utilities;
 public class GameDemoState implements SwirldState {
 	// In this app, we decided to make each transaction a single byte,
 	// which describes a movement by a player, as one of these 4:
-	public static final byte	TRANS_NORTH	= 0;
-	public static final byte	TRANS_SOUTH	= 1;
-	public static final byte	TRANS_EAST	= 2;
-	public static final byte	TRANS_WEST	= 3;
+	public static final byte TRANS_NORTH = 0;
+	public static final byte TRANS_SOUTH = 1;
+	public static final byte TRANS_EAST = 2;
+	public static final byte TRANS_WEST = 3;
 
-	private RandomExtended		random;
+	private RandomExtended random;
 	// for moving goals and players randomly
-	private AddressBook			addressBook;
+	private AddressBook addressBook;
 	// width of the board
-	private int					xBoardSize	= 10;
+	private int xBoardSize = 10;
 	// height of the board
-	private int					yBoardSize	= 20;
+	private int yBoardSize = 20;
 	// current coordinates of the goal
-	private int					xGoal		= 0;
-	private int					yGoal		= 0;
+	private int xGoal = 0;
+	private int yGoal = 0;
 	// sum of all players' scores
-	private int					totalScore	= 0;
+	private int totalScore = 0;
 	// score for each player
-	private int					score[];
+	private int score[];
 	// # transactions so far, per player
-	private int					numTrans[];
+	private int numTrans[];
 	// coordinates of each player
-	private int					xPlayer[];
-	private int					yPlayer[];
+	private int xPlayer[];
+	private int yPlayer[];
 	// color of each player
-	private Color				color[];
+	private Color color[];
 	// color of the icon of the goal
-	private Color				colorGoal;
+	private Color colorGoal;
 
 	public synchronized int getxBoardSize() {
 		return xBoardSize;

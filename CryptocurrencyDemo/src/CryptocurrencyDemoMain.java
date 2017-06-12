@@ -27,19 +27,19 @@ import com.swirlds.platform.SwirldState;
  */
 public class CryptocurrencyDemoMain implements SwirldMain {
 	// time to delay between screen updates
-	private final long		screenUpdateDelay	= 250;
+	private final long screenUpdateDelay = 250;
 	// the app is run by this
-	private Platform		platform;
+	private Platform platform;
 	// ID number for this member
-	private int				selfId;
+	private int selfId;
 	// a console window for text output
-	private Console			console;
+	private Console console;
 	// used to randomly choose ask/bid and prices
-	private Random			rand				= new Random();
+	private Random rand = new Random();
 	// so user can use arrows and spacebar
-	private GuiKeyListener	keyListener			= new GuiKeyListener();
+	private GuiKeyListener keyListener = new GuiKeyListener();
 	// if not -1, then need to create a transaction to sync fast or slow
-	private byte			speedCmd			= -1;
+	private byte speedCmd = -1;
 	// is the simulation running fast now?
 	private boolean isFast = false;
 

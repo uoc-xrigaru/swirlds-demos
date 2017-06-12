@@ -1,1 +1,5 @@
+GameDemoState.class
+GameDemoMain.class
 GameDemoMain$1.class
+GameDemoMain$GuiKeyListener.class
+GameDemoMain$Board.class

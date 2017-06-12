@@ -25,13 +25,13 @@ import com.swirlds.platform.SwirldState;
  */
 public class HelloSwirldDemoMain implements SwirldMain {
 	// the app is run by this
-	public Platform		platform;
+	public Platform platform;
 	// ID number for this member
-	public int			selfId;
+	public int selfId;
 	// a console window for text output
-	public Console		console;
+	public Console console;
 	// sleep this many milliseconds after each sync
-	public final int	sleepPeriod	= 100;
+	public final int sleepPeriod = 100;
 
 	/**
 	 * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a

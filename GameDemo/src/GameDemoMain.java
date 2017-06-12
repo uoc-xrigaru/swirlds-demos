@@ -39,31 +39,31 @@ import com.swirlds.platform.SwirldState;
  */
 public class GameDemoMain implements SwirldMain {
 	// delay after each time through the main game loop (which updates screen, etc)
-	private long	gameLoopDelay	= 100;																																																																	 // update
+	private long gameLoopDelay = 100;																																																																	 // update
 																																																																											 // 10
 																																																																											 // times/sec;
 	// the app is run by this
-	public Platform	platform;
+	public Platform platform;
 	// ID number for this member
-	public int		selfId;
+	public int selfId;
 	// so user can use arrows and spacebar
-	GuiKeyListener	keyListener		= new GuiKeyListener();
+	GuiKeyListener keyListener = new GuiKeyListener();
 	// the entire window
-	JFrame			frame;
+	JFrame frame;
 	// should computer play for the user?
-	boolean			automove		= true;
+	boolean automove = true;
 
 	// the following are used in paintComponent to estimate transactions per second
 
 	// transactions per second
-	double			tps				= 0;
+	double tps = 0;
 	// exponentially weighted recent average
-	double			tpsSmooth		= 0;
+	double tpsSmooth = 0;
 	// discount factor
-	double			tpsGamma		= 0.9;
+	double tpsGamma = 0.9;
 
-	long			oldNumTotalTrans;
-	Instant			oldTime			= Instant.now();
+	long oldNumTotalTrans;
+	Instant oldTime = Instant.now();
 
 	/**
 	 * Listen for input from the keyboard, and remember the last key typed.
@@ -147,8 +147,7 @@ public class GameDemoMain implements SwirldMain {
 								+ platform.getAddress().getPortInternalIpv4(),
 						col, row++ * textHeight - 3);
 				g.drawString("External: "
-						+ (Network.getExternalIpAddress().equals("")
-								? ""
+						+ (Network.getExternalIpAddress().equals("") ? ""
 								: Network.getExternalIpAddress() + " : "
 										+ platform.getAddress()
 												.getPortExternalIpv4()),

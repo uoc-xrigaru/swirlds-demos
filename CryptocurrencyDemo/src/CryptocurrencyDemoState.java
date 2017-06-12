@@ -41,47 +41,47 @@ public class CryptocurrencyDemoState implements SwirldState {
 	};
 
 	// in slow mode, number of milliseconds to sleep after each outgoing sync
-	private final static int	delaySlowSync	= 1000;
+	private final static int delaySlowSync = 1000;
 	// in fast mode, number of milliseconds to sleep after each outgoing sync
-	private final static int	delayFastSync	= 0;
+	private final static int delayFastSync = 0;
 	// number of different stocks that can be bought and sold
-	public final static int		NUM_STOCKS		= 10;
+	public final static int NUM_STOCKS = 10;
 	// remember the last MAX_TRADES trades that occurred.
-	private final static int	MAX_TRADES		= 200;
+	private final static int MAX_TRADES = 200;
 	// the platform running this app
-	private Platform			platform		= null;
+	private Platform platform = null;
 
 	////////////////////////////////////////////////////
 	// the following are the shared state:
 
 	// names and addresses of all members
-	private AddressBook			addressBook;
+	private AddressBook addressBook;
 	// the number of members participating in this swirld
-	private int					numMembers;
+	private int numMembers;
 	// ticker symbols for each of the stocks
-	private String[]			tickerSymbol;
+	private String[] tickerSymbol;
 	// number of cents owned by each member
-	private long[]				wallet;
+	private long[] wallet;
 	// portfolio[m][s] is the number of shares that member m owns of stock s
-	private long[][]			shares;
+	private long[][] shares;
 	// a record of the last NUM_TRADES trades
-	private String[]			trades;
+	private String[] trades;
 	// number of trades currently stored in trades[] (from 0 to MAX_TRADES, inclusive)
-	private int					numTradesStored	= 0;
+	private int numTradesStored = 0;
 	// the latest trade was stored in trades[lastTradeIndex]
-	private int					lastTradeIndex	= 0;
+	private int lastTradeIndex = 0;
 	// how many trades have happened in all history
-	private long				numTrades		= 0;
+	private long numTrades = 0;
 	// the most recent price (in cents) that a seller has offered for each stock
-	private byte[]				ask;
+	private byte[] ask;
 	// the most recent price (in cents) that a buyer has offered for each stock
-	private byte[]				bid;
+	private byte[] bid;
 	// the ID number of the member whose offer is stored in ask[] (or -1 if none)
-	private long[]				askId;
+	private long[] askId;
 	// the ID number of the member whose offer is stored in bid[] (or -1 if none)
-	private long[]				bidId;
+	private long[] bidId;
 	// price of the most recent trade for each stock
-	private byte[]				price;
+	private byte[] price;
 
 	////////////////////////////////////////////////////
 
@@ -132,7 +132,7 @@ public class CryptocurrencyDemoState implements SwirldState {
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
