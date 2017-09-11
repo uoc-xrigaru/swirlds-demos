@@ -34,53 +34,55 @@ import com.swirlds.platform.Utilities;
  * these cryptocurrencies won't have any actual value.
  */
 public class CryptocurrencyDemoState implements SwirldState {
-	// the first byte of a transaction is the ordinal of one of these four:
-	// do not delete any of these or change the order (and add new ones only to the end)
+	/**
+	 * the first byte of a transaction is the ordinal of one of these four: do not delete any of these or
+	 * change the order (and add new ones only to the end)
+	 */
 	public static enum TransType {
 		slow, fast, bid, ask // run slow/fast or broadcast a bid/ask
 	};
 
-	// in slow mode, number of milliseconds to sleep after each outgoing sync
+	/** in slow mode, number of milliseconds to sleep after each outgoing sync */
 	private final static int delaySlowSync = 1000;
-	// in fast mode, number of milliseconds to sleep after each outgoing sync
+	/** in fast mode, number of milliseconds to sleep after each outgoing sync */
 	private final static int delayFastSync = 0;
-	// number of different stocks that can be bought and sold
+	/** number of different stocks that can be bought and sold */
 	public final static int NUM_STOCKS = 10;
-	// remember the last MAX_TRADES trades that occurred.
+	/** remember the last MAX_TRADES trades that occurred. */
 	private final static int MAX_TRADES = 200;
-	// the platform running this app
+	/** the platform running this app */
 	private Platform platform = null;
 
 	////////////////////////////////////////////////////
 	// the following are the shared state:
 
-	// names and addresses of all members
+	/** names and addresses of all members */
 	private AddressBook addressBook;
-	// the number of members participating in this swirld
+	/** the number of members participating in this swirld */
 	private int numMembers;
-	// ticker symbols for each of the stocks
+	/** ticker symbols for each of the stocks */
 	private String[] tickerSymbol;
-	// number of cents owned by each member
+	/** number of cents owned by each member */
 	private long[] wallet;
-	// portfolio[m][s] is the number of shares that member m owns of stock s
+	/** shares[m][s] is the number of shares that member m owns of stock s */
 	private long[][] shares;
-	// a record of the last NUM_TRADES trades
+	/** a record of the last NUM_TRADES trades */
 	private String[] trades;
-	// number of trades currently stored in trades[] (from 0 to MAX_TRADES, inclusive)
+	/** number of trades currently stored in trades[] (from 0 to MAX_TRADES, inclusive) */
 	private int numTradesStored = 0;
-	// the latest trade was stored in trades[lastTradeIndex]
+	/** the latest trade was stored in trades[lastTradeIndex] */
 	private int lastTradeIndex = 0;
-	// how many trades have happened in all history
+	/** how many trades have happened in all history */
 	private long numTrades = 0;
-	// the most recent price (in cents) that a seller has offered for each stock
+	/** the most recent price (in cents) that a seller has offered for each stock */
 	private byte[] ask;
-	// the most recent price (in cents) that a buyer has offered for each stock
+	/** the most recent price (in cents) that a buyer has offered for each stock */
 	private byte[] bid;
-	// the ID number of the member whose offer is stored in ask[] (or -1 if none)
+	/** the ID number of the member whose offer is stored in ask[] (or -1 if none) */
 	private long[] askId;
-	// the ID number of the member whose offer is stored in bid[] (or -1 if none)
+	/** the ID number of the member whose offer is stored in bid[] (or -1 if none) */
 	private long[] bidId;
-	// price of the most recent trade for each stock
+	/** price of the most recent trade for each stock */
 	private byte[] price;
 
 	////////////////////////////////////////////////////
@@ -119,23 +121,17 @@ public class CryptocurrencyDemoState implements SwirldState {
 	 * any trades have ever occurred), but getTrade(getNumTrades()+1) will return "" (unless one happens
 	 * between the two method calls).
 	 * 
-	 * @return
+	 * @return number of trades
 	 */
 	public synchronized long getNumTrades() {
 		return numTrades;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized FastCopyable copy() {
 		CryptocurrencyDemoState copy = new CryptocurrencyDemoState();
@@ -143,9 +139,6 @@ public class CryptocurrencyDemoState implements SwirldState {
 		return copy;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyTo(FCDataOutputStream outStream) {
 		try {
@@ -168,9 +161,6 @@ public class CryptocurrencyDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyFrom(FCDataInputStream inStream) {
 		try {
@@ -193,9 +183,6 @@ public class CryptocurrencyDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void copyFrom(SwirldState oldCryptocurrencyState) {
 		CryptocurrencyDemoState old = (CryptocurrencyDemoState) oldCryptocurrencyState;
@@ -225,18 +212,18 @@ public class CryptocurrencyDemoState implements SwirldState {
 	 * Eventually, there will be a bid that is equal to or greater than the ask. At that point, they are
 	 * matched, and a trade occurs, selling one share at the average of the bid and ask. Then the stored bid
 	 * and ask are erased, and it goes back to waiting for a bid or ask to remember.
-	 * 
+	 * <p>
 	 * If a member tries to sell a stock for which they own no shares, or if they try to buy a stock at a
 	 * price higher than the amount of money they currently have, then their bid/ask for that stock will not
 	 * be stored.
-	 * 
+	 * <p>
 	 * A transaction is 1 or 3 bytes:
 	 * 
 	 * <pre>
 	 * {SLOW} = run slowly 
 	 * {FAST} = run quickly 
-	 * {BID,s,p} = bid to buy 1 share of stock s at p cents (where 1 <= p <= 127) 
-	 * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 <= p <= 127)
+	 * {BID,s,p} = bid to buy 1 share of stock s at p cents (where 0 &lt;= p &lt;= 127) 
+	 * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
 	 * </pre>
 	 */
 	@Override
@@ -344,16 +331,10 @@ public class CryptocurrencyDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void freeze() {
+	public void noMoreTransactions() {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void init(Platform platform, AddressBook addressBook) {
 		this.platform = platform;

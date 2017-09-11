@@ -15,7 +15,6 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.time.Instant;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -38,32 +37,18 @@ import com.swirlds.platform.SwirldState;
  * WASD key will turn off automatic movement.
  */
 public class GameDemoMain implements SwirldMain {
-	// delay after each time through the main game loop (which updates screen, etc)
-	private long gameLoopDelay = 100;																																																																	 // update
-																																																																											 // 10
-																																																																											 // times/sec;
-	// the app is run by this
+	/** delay after each time through the main game loop in milliseconds (which updates screen, etc) */
+	private long gameLoopDelay = 200;
+	/** the app is run by this */
 	public Platform platform;
-	// ID number for this member
+	/** ID number for this member */
 	public int selfId;
-	// so user can use arrows and spacebar
+	/** so user can use arrows and spacebar */
 	GuiKeyListener keyListener = new GuiKeyListener();
-	// the entire window
+	/** the entire window */
 	JFrame frame;
-	// should computer play for the user?
+	/** should computer play for the user? */
 	boolean automove = true;
-
-	// the following are used in paintComponent to estimate transactions per second
-
-	// transactions per second
-	double tps = 0;
-	// exponentially weighted recent average
-	double tpsSmooth = 0;
-	// discount factor
-	double tpsGamma = 0.9;
-
-	long oldNumTotalTrans;
-	Instant oldTime = Instant.now();
 
 	/**
 	 * Listen for input from the keyboard, and remember the last key typed.
@@ -83,16 +68,16 @@ public class GameDemoMain implements SwirldMain {
 		}
 	}
 
+	/** the graphics area where the game board is drawn */
 	private class Board extends JPanel {
+		/** used for serializing */
 		private static final long serialVersionUID = 1L;
 
-		/**
-		 * Called by the runtime system whenever the panel needs painting.
-		 */
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 
 			GameDemoState state = (GameDemoState) platform.getState();
+
 			// the state methods are all synchronized, but we still want to put them all in a
 			// single synchronized block to ensure the state doesn't change in between them
 			synchronized (state) {
@@ -100,7 +85,7 @@ public class GameDemoMain implements SwirldMain {
 				AddressBook addr = state.getAddressBookCopy();
 				int numMem = addr.getSize();
 				int width = getWidth();
-				int height1 = Math.max(5, numMem) * textHeight;   // scoreboard
+				int height1 = Math.max(6, numMem) * textHeight;   // scoreboard
 				int height2 = getHeight() - height1; // playing board
 
 				int x = width * state.getxGoal() / state.getxBoardSize();
@@ -134,23 +119,23 @@ public class GameDemoMain implements SwirldMain {
 
 				int row = 1;
 				int col = 190;
-				g.drawString(
-						"Trans/sec:  " + (long) platform.getTransPerSecond(),
-						col, row++ * textHeight - 3);
-				g.drawString(
-						"Events/sec: " + (long) platform.getEventsPerSecond(),
-						col, row++ * textHeight - 3);
-				// getInternalIPAddress() is more reliable than
-				// (InetAddress.getLocalHost().getHostAddress());
+				g.drawString("Trans/sec:  "
+						+ (long) platform.getStats().getStat("trans/sec"), col,
+						row++ * textHeight - 3);
+				g.drawString("Events/sec: "
+						+ (long) platform.getStats().getStat("events/sec"), col,
+						row++ * textHeight - 3);
 				g.drawString(
 						"Internal: " + Network.getInternalIPAddress() + " : "
 								+ platform.getAddress().getPortInternalIpv4(),
 						col, row++ * textHeight - 3);
-				g.drawString("External: "
-						+ (Network.getExternalIpAddress().equals("") ? ""
-								: Network.getExternalIpAddress() + " : "
-										+ platform.getAddress()
-												.getPortExternalIpv4()),
+				g.drawString(
+						"External: "
+								+ (Network.getExternalIpAddress().equals("")
+										? ""
+										: Network.getExternalIpAddress() + " : "
+												+ platform.getAddress()
+														.getPortExternalIpv4()),
 						col, row++ * textHeight - 3);
 				g.drawString("Arrows/WASD move", col, row++ * textHeight - 3);
 				g.drawString("Spacebar automoves", col, row++ * textHeight - 3);
@@ -172,8 +157,6 @@ public class GameDemoMain implements SwirldMain {
 	 * 
 	 * @param type
 	 *            the direction to move: 0=NOP 1=North 2=South 3=East 4=West
-	 * @param amount
-	 *            number of cents (for ask or bid)
 	 */
 	synchronized private void sendTransaction(int type) {
 		byte[] transaction = new byte[1];
@@ -240,9 +223,6 @@ public class GameDemoMain implements SwirldMain {
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void init(Platform platform, int id) {
 		this.platform = platform;
@@ -255,12 +235,9 @@ public class GameDemoMain implements SwirldMain {
 		frame.setVisible(true);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void run() {
-		while (platform.isRunning()) {
+		while (true) {
 			int dx, dy;
 			// get a reference to the state repeatedly, because it changes sometimes
 			GameDemoState state = (GameDemoState) platform.getState();
@@ -288,17 +265,11 @@ public class GameDemoMain implements SwirldMain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void preEvent() {
 		keyboardAndRedraw(true, false, null);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SwirldState newState() {
 		return new GameDemoState();

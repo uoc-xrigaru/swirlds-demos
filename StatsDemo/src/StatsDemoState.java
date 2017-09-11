@@ -22,25 +22,19 @@ import com.swirlds.platform.Platform;
 import com.swirlds.platform.SwirldState;
 
 /**
- * This holds the current state of the swirld. For this simple "hello swirld" code, each transaction is just
- * a string, and the state is just a list of the strings in all the transactions handled so far, in the
- * order that they were handled.
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the
+ * screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction is 100
+ * random bytes. So StatsDemoState.handleTransaction doesn't actually do anything.
  */
 public class StatsDemoState implements SwirldState {
-	// the address book passed in by the Platform at the start
+	/** the address book passed in by the Platform at the start */
 	private AddressBook addressBook;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized FastCopyable copy() {
 		StatsDemoState copy = new StatsDemoState();
@@ -48,52 +42,30 @@ public class StatsDemoState implements SwirldState {
 		return copy;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @throws IOException
-	 */
 	@Override
 	public void copyTo(FCDataOutputStream outStream) throws IOException {
 		addressBook.copyTo(outStream);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @throws IOException
-	 */
 	@Override
 	public void copyFrom(FCDataInputStream inStream) throws IOException {
 		addressBook.copyFrom(inStream);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void copyFrom(SwirldState old) {
 		addressBook = ((StatsDemoState) old).addressBook.copy();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void handleTransaction(long id, boolean consensus,
 			Instant timeCreated, byte[] transaction, Address address) {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void freeze() {
+	public void noMoreTransactions() {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void init(Platform platform, AddressBook addressBook) {
 		this.addressBook = addressBook;

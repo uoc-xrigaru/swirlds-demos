@@ -14,52 +14,41 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Locale;
 import java.util.Random;
 
-import com.swirlds.platform.AddressBook;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.Console;
 import com.swirlds.platform.Platform;
+import com.swirlds.platform.Statistics;
 import com.swirlds.platform.SwirldMain;
 import com.swirlds.platform.SwirldState;
 
 /**
- * This HelloSwirld creates a single transaction, consisting of the string "Hello Swirld", and then goes
- * into a busy loop (checking once a second) to see when the state gets the transaction. When it does, it
- * prints it, too.
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the
+ * screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction is 100
+ * random bytes. So StatsDemoState.handleTransaction doesn't actually do anything.
  */
 public class StatsDemoMain implements SwirldMain {
 	// the first four come from the parameters in the config.txt file
 
-	// should this run with no windows?
+	/** should this run with no windows? */
 	private boolean headless = false;
-	// number of milliseconds between writes to the log file
-	private long writePeriod = 3000;
-	// bytes in each transaction
+	/** number of milliseconds between writes to the log file */
+	private int writePeriod = 3000;
+	/** bytes in each transaction */
 	private int bytesPerTrans = 1;
-	// transactions in each Event
+	/** transactions in each Event */
 	private int transPerEvent = 1;
 
-	// path and filename of the .csv file to write to
+	/** path and filename of the .csv file to write to */
 	private String path;
-	// number of members running this app
-	private int numMembers = -1;
-	// number of members running this app on this local machine
-	private int numLocalMembers = -1;
-	// ID number for this member
+	/** ID number for this member */
 	private int selfId;
-	// the app is run by this
+	/** the app is run by this */
 	private Platform platform;
-	// the address book passed in by the Platform at the start
-	private AddressBook addressBook;
-	// a console window for text output
+	/** a console window for text output */
 	private Console console = null;
-	// used to make the transactions random, so they won't cheat and shrink when zipped
+	/** used to make the transactions random, so they won't cheat and shrink when zipped */
 	private Random random = new java.util.Random();
 
 	/**
@@ -76,29 +65,34 @@ public class StatsDemoMain implements SwirldMain {
 
 	/**
 	 * Write a message to the log file. Also write it to the console, if there is one. In both cases, skip a
-	 * line after writing. This method opens the file at the start and closes it at the end, to deconflict
-	 * with any other process trying to read the same file. For example, this app could run headless on a
-	 * server, and an FTP session could download the log file, and the file it received would have only
-	 * complete log messages, never half a message.
-	 * 
+	 * line after writing, if newline is true. This method opens the file at the start and closes it at the
+	 * end, to deconflict with any other process trying to read the same file. For example, this app could
+	 * run headless on a server, and an FTP session could download the log file, and the file it received
+	 * would have only complete log messages, never half a message.
+	 * <p>
 	 * The file is created if it doesn't exist. It will be named "StatsDemo0.csv", with the number
-	 * incrementing for each simultaneous member if there is more than one. The location is the "current"
-	 * directory. If run from a shell script, it will be the current folder that the shell script has. If
-	 * run from Eclipse, it will be at the top of the project folder. If there is a console, it prints the
-	 * location there. If not, it can be found by searching the file system for "StatsDemo0.csv".
+	 * incrementing for each member currently running on the local machine, if there is more than one. The
+	 * location is the "current" directory. If run from a shell script, it will be the current folder that
+	 * the shell script has. If run from Eclipse, it will be at the top of the project folder. If there is a
+	 * console, it prints the location there. If not, it can be found by searching the file system for
+	 * "StatsDemo0.csv".
 	 * 
-	 * @param append
-	 *            should append to the file rather than overwriting it?
 	 * @param message
 	 *            the String to write
+	 * @param newline
+	 *            true if a new line should be started after this one
 	 */
-	private void writeToConsoleAndFile(boolean append, String message) {
+	private void write(String message, boolean newline) {
 		BufferedWriter file = null;
 		try {// create or append to file in current directory
 			path = System.getProperty("user.dir") + File.separator + "StatsDemo"
 					+ selfId + ".csv";
-			file = new BufferedWriter(new FileWriter(path, append));
-			file.write(message);
+			file = new BufferedWriter(new FileWriter(path, true));
+			if (newline) {
+				file.write("\n");
+			} else {
+				file.write(message.trim().replaceAll(",", "") + ",");
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -110,185 +104,47 @@ public class StatsDemoMain implements SwirldMain {
 			}
 		}
 		if (console != null) {
-			console.out.print(message.replaceAll(",", " "));
+			console.out.print(newline ? "\n" : message);
+		}
+	}
+
+	/** Erase the existing file (if one exists) */
+	private void eraseFile() {
+		BufferedWriter file = null;
+		try {// erase file in current directory
+			path = System.getProperty("user.dir") + File.separator + "StatsDemo"
+					+ selfId + ".csv";
+			file = new BufferedWriter(new FileWriter(path, false));
+			file.write("");
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (file != null) {
+				try {
+					file.close();
+				} catch (Exception e) {
+				}
+			}
 		}
 	}
 
 	/**
-	 * write one line of the comments (mode 1), or one column heading (mode 2), or one number in a column
-	 * (mode 3).
+	 * Same as writeToConsolAndFile, except it does not start a new line after it.
 	 * 
-	 * @param mode
-	 *            which kind of thing to write
-	 * @param heading
-	 *            the column heading
-	 * @param comment
-	 *            the comment describing this statistic
-	 * @param stat
-	 *            the statistic itself (usually a number)
+	 * @param message
+	 *            the String to write
 	 */
-	void write(int mode, String heading, String comment, String stat) {
-		switch (mode) {
-			case 1: // write the definition of a statistic (at the top)
-				writeToConsoleAndFile(true, String.format("%14s:,%s", heading,
-						comment + System.getProperty("line.separator")));
-				break;
-			case 2: // write a column heading
-				writeToConsoleAndFile(true,
-						String.format(",%" + stat.length() + "s", heading));
-				break;
-			case 3:// write one statistic
-				writeToConsoleAndFile(true, "," + stat);
-				break;
-		}
+	private void write(String message) {
+		write(message, false);
 	}
 
-	/**
-	 * write all the stats as comments (mode 1) or column headings (mode 2) or numbers (mode 3).
-	 * 
-	 * @mode which of the three types to write
-	 */
-	void writeAll(int mode) {
-		AddressBook addr = platform.getState().getAddressBookCopy();
-		numMembers = addr.getSize();
-		numLocalMembers = addr.getOwnHostCount();
-		DateTimeFormatter formatter = DateTimeFormatter
-				.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.US)
-				.withZone(ZoneId.systemDefault());
-		formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
-		String time = formatter
-				.format(Instant.now().atZone(ZoneId.of("US/Central")));
-		if (mode == 1) {
-			write(mode, "filename", path, "");
-		} else {
-			writeToConsoleAndFile(true, ",");
-		}
-		write(mode, "time", //
-				"the time at which the stats are written",
-				String.format("%25s", time));
-		write(mode, "trans",//
-				"number of transactions received so far",
-				String.format("%10d", platform.getNumTrans()));
-		write(mode, "secR2C",//
-				"time from receiving an event to knowing its consensus (in seconds)",
-				String.format("%8.3f", platform.getAvgReceivedConsensusTime()));
-		write(mode, "secC2C",//
-				"time from creating an event to knowing its consensus (in seconds)",
-				String.format("%8.3f", platform.getAvgCreatedConsensusTime()));
-		write(mode, "secSync",//
-				"duration of average successful sync (in seconds)",
-				String.format("%8.3f", platform.getAvgSyncDuration()));
-		write(mode, "secRound",//
-				"duration of average round (in seconds)",
-				String.format("%8.3f", platform.getAvgRoundDuration()));
-		write(mode, "secPing",//
-				"average time for a round trip message between 2 computers (in seconds)",
-				String.format("%9.6f", platform.getAvgPingSeconds()));
-		// write(mode, "secPing[]",//
-		// "average time for a round trip message to each computer (in seconds)",
-		// String.format("%9s",
-		// Arrays.toString(platform.getPingSeconds())));
-		write(mode, "bytes/sec",//
-				"number of bytes in the transactions received per second",
-				String.format("%12.2f",
-						platform.getTransPerSecond() * bytesPerTrans));
-		write(mode, "trans/sec",//
-				"number of transactions received per second",
-				String.format("%10.2f", platform.getTransPerSecond()));
-		write(mode, "events/sec",//
-				"number of events received per second",
-				String.format("%12.2f", platform.getEventsPerSecond()));
-		write(mode, "dupEv/sec",//
-				"number of events received per second that are already known",
-				String.format("%11.2f",
-						platform.getDuplicateEventsPerSecond()));
-		write(mode, "dupEv%",//
-				"percentage of events received that are already known",
-				String.format("%8.2f",
-						platform.getDuplicateEventsPercentage()));
-		write(mode, "badEv/sec",//
-				"number of corrupted events received per second",
-				String.format("%11.7f", platform.getBadEventsPerSecond()));
-		write(mode, "cSync/sec",//
-				"(call syncs) syncs completed per second initiated by this member",
-				String.format("%11.7f", platform.getCallSyncsPerSecond()));
-		write(mode, "rSync/sec",//
-				"(receive syncs) syncs completed per second initiated by other member",
-				String.format("%11.7f", platform.getRecSyncsPerSecond()));
-		write(mode, "icSync/sec",//
-				"(interrupted call syncs) syncs interrupted per second initiated by this member",
-				String.format("%11.7f",
-						platform.getInterruptedCallSyncsPerSecond()));
-		write(mode, "irSync/sec",//
-				"(interrupted receive syncs) syncs interrupted per second initiated by other member",
-				String.format("%11.7f",
-						platform.getInterruptedRecSyncsPerSecond()));
-		write(mode, "freeB",//
-				"bytes of free memory (which can increase after a garbage collection)",
-				String.format("%12d", Runtime.getRuntime().freeMemory()));
-		write(mode, "totB",//
-				"total bytes in the Java Virtual Machine",
-				String.format("%12d", Runtime.getRuntime().totalMemory()));
-		write(mode, "maxB",//
-				"maximum bytes that the JVM might use",
-				String.format("%12d", Runtime.getRuntime().maxMemory()));
-		write(mode, "proc",//
-				"number of processors (cores) available to the JVM",
-				String.format("%6d",
-						Runtime.getRuntime().availableProcessors()));
-		write(mode, "name",//
-				"name of this member",//
-				String.format("%6s",
-						addressBook.getAddress(selfId).getSelfName()));
-		write(mode, "ID", //
-				"ID number of this member",//
-				String.format("%3d", selfId));
-		write(mode, "members", //
-				"total number of members participating",
-				String.format("%8d", numMembers));
-		write(mode, "local", //
-				"number of members running on this local machine",
-				String.format("%6d", numLocalMembers));
-		write(mode, "write", //
-				"write statistics to the file every this many milliseconds",
-				String.format("%6d", writePeriod));
-		write(mode, "bytes/trans", //
-				"number of bytes in each transactions",
-				String.format("%12d", bytesPerTrans));
-		write(mode, "trans/event", //
-				"number of transactions in each event",
-				String.format("%12d", transPerEvent));
-		write(mode, "simCallSyncs", //
-				"max number of syncs this can initiate simultaneously",
-				String.format("%12d", Platform.getMaxOutgoingSyncs()));
-		write(mode, "dedup", //
-				"avoid duplicates: a list of event counts is sent every this many events (0=never)",
-				String.format("%5d", Platform.getDedupFreq()));
-		write(mode, "cEvents/sec",//
-				"number of events per second created by this node",
-				String.format("%12.2f", platform.geteventsCreatedPerSecond()));
-		write(mode, "secC2R",//
-				"time from a created event from another member to it being received and veryfing the signature (in seconds)",
-				String.format("%8.3f", platform.getAvgCreatedReceivedTime()));
-		write(mode, "secC2RC",//
-				"time from a created event from another member to it being received and and having consensus for it (in seconds)",
-				String.format("%8.3f",
-						platform.getAvgCreatedReceivedConsensusTime()));
-		write(mode, "secR2nR",//
-				"time from an event received in one round, to an event received in the next round (in seconds)",
-				String.format("%8.3f",
-						platform.getAvgFirstEventInRoundReceivedTime()));
-		write(mode, "secR2F",//
-				"time from an event received, to all the famous witnesses being known (in seconds)",
-				String.format("%8.3f", platform.getReceivedFamousTime()));
-		writeToConsoleAndFile(true, System.getProperty("line.separator"));
+	/** Start the next line, for both console and file. */
+	private void newline() {
+		write("", true);
 	}
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void preEvent() {
 		byte[] transaction = new byte[bytesPerTrans];
@@ -298,9 +154,6 @@ public class StatsDemoMain implements SwirldMain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void init(Platform platform, int id) {
 		long syncDelay;
@@ -312,7 +165,6 @@ public class StatsDemoMain implements SwirldMain {
 		syncDelay = Integer.parseInt(pars[2]);
 		bytesPerTrans = Integer.parseInt(pars[3]);
 		transPerEvent = Integer.parseInt(pars[4]);
-		addressBook = platform.getState().getAddressBookCopy();
 		if (!headless) { // create the window, make it visible
 			console = platform.createConsole(true);
 		}
@@ -320,28 +172,63 @@ public class StatsDemoMain implements SwirldMain {
 				"Stats Demo v. 1.1\nThis writes statistics to a log file,"
 						+ " such as the number of transactions per second.");
 		platform.setSleepAfterSync(syncDelay);
+		platform.getStats().setStatsWritePeriod(writePeriod);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void run() {
-		writeToConsoleAndFile(false, ""); // erase the old file, if any
-		writeAll(1); // write the definitions at the top
-		writeAll(2); // write the column headings
-		while (platform.isRunning()) { // keep logging forever
+		Statistics statsObj = platform.getStats();
+		String[][] stats = statsObj.getAvailableStats();
+
+		// erase the old file, if any
+		eraseFile();
+
+		// set the heading at the top of the console
+		if (console != null) {
+			String str = "";
+			for (int i = 0; i < stats.length; i++) {
+				str += String.format(
+						"%" + statsObj.getStatString(i).length() + "s",
+						stats[i][0]);
+			}
+			console.setHeading(str + "\n");
+		}
+
+		// write the definitions at the top (name is stats[i][0], description is stats[i][1])
+		write(String.format("%14s: ", "filename"));
+		write(String.format("%s", path));
+		newline();
+		for (int i = 0; i < stats.length; i++) {
+			write(String.format("%14s: ", stats[i][0]));
+			write(String.format("%s", stats[i][1]));
+			newline();
+		}
+		newline();
+
+		// write the column headings again
+		write("");// indent by two columns
+		write("");
+		for (int i = 0; i < stats.length; i++) {
+			write(String.format("%" + statsObj.getStatString(i).length() + "s",
+					stats[i][0]));
+		}
+		newline();
+
+		while (true) { // keep logging forever
 			try {
-				writeAll(3); // write a row of numbers
+				// write a row of numbers
+				write("");
+				write("");
+				for (int i = 0; i < stats.length; i++) {
+					write(statsObj.getStatString(i));
+				}
+				newline();
 				Thread.sleep(writePeriod); // add new rows infrequently
 			} catch (InterruptedException e) {
 			}
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SwirldState newState() {
 		return new StatsDemoState();

@@ -14,16 +14,34 @@ import java.io.*;
 
 /** The pathname and contents of a file, to be transmitted over the network */
 public class FileTransaction implements Serializable {
+	/** needed for serializing */
 	private static final long serialVersionUID = 1L;
 
+	/** the full path name, including the file name */
 	String pathname;
+	/** the contents of this file */
 	String text;
 
+	/**
+	 * record the pathname and text
+	 * 
+	 * @param pathname
+	 *            the full path name, including the file name
+	 * @param text
+	 *            the contents of this file
+	 */
 	public FileTransaction(String pathname, String text) {
 		this.pathname = pathname;
 		this.text = text;
 	}
 
+	/**
+	 * Serialize this file transaction to a sequence of bytes
+	 * 
+	 * @return the sequence as a byte array
+	 * @throws IOException
+	 *             if anything goes wrong
+	 */
 	public byte[] serialize() throws IOException {
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
 		DataOutputStream o = new DataOutputStream(b);
@@ -33,8 +51,16 @@ public class FileTransaction implements Serializable {
 		return b.toByteArray();
 	}
 
-	public static FileTransaction deserialize(byte[] b)
-			throws IOException, ClassNotFoundException {
+	/**
+	 * Deserialize this file transaction from a sequence of bytes
+	 *
+	 * @param b
+	 *            the sequence of bytes
+	 * @return the file transaction
+	 * @throws IOException
+	 *             if anything goes wrong
+	 */
+	public static FileTransaction deserialize(byte[] b) throws IOException {
 		DataInputStream o = new DataInputStream(new ByteArrayInputStream(b));
 		String pathname2 = o.readUTF();
 		String text2 = o.readUTF();

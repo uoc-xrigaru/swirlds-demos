@@ -26,26 +26,24 @@ import com.swirlds.platform.SwirldState;
  * price between 1 and 127 cents (inclusive).
  */
 public class CryptocurrencyDemoMain implements SwirldMain {
-	// time to delay between screen updates
+	/** time to delay between screen updates, in milliseconds (250 for 4 times a second) */
 	private final long screenUpdateDelay = 250;
-	// the app is run by this
+	/** the app is run by this */
 	private Platform platform;
-	// ID number for this member
+	/** ID number for this member */
 	private int selfId;
-	// a console window for text output
+	/** a console window for text output */
 	private Console console;
-	// used to randomly choose ask/bid and prices
+	/** used to randomly choose ask/bid and prices */
 	private Random rand = new Random();
-	// so user can use arrows and spacebar
+	/** so user can use arrows and spacebar */
 	private GuiKeyListener keyListener = new GuiKeyListener();
-	// if not -1, then need to create a transaction to sync fast or slow
+	/** if not -1, then need to create a transaction to sync fast or slow */
 	private byte speedCmd = -1;
-	// is the simulation running fast now?
+	/** is the simulation running fast now? */
 	private boolean isFast = false;
 
-	/**
-	 * Listen for input from the keyboard, and remember the last key typed.
-	 */
+	/** Listen for input from the keyboard, and remember the last key typed. */
 	private class GuiKeyListener implements KeyListener {
 		@Override
 		public void keyReleased(KeyEvent e) {
@@ -83,9 +81,6 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void preEvent() {
 		int numStocks = CryptocurrencyDemoState.NUM_STOCKS;
@@ -111,9 +106,6 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void init(Platform platform, int id) {
 		this.platform = platform;
@@ -123,20 +115,18 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 		this.console.addKeyListener(keyListener);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void run() {
 		long seq = 0;
 		// print the latest trades to the console, 4 times a second, forever
-		while (platform.isRunning()) {
+		while (true) {
 			CryptocurrencyDemoState state = (CryptocurrencyDemoState) platform
 					.getState();
 			console.setHeading(" Cryptocurrency and Stock Market Demo\n"
 					+ " Press F for fast sync, S for slow, (currently "
 					+ (isFast ? "fast" : "slow") + ")\n"
-					+ String.format(" %d", (int) platform.getTransPerSecond())
+					+ String.format(" %d",
+							(int) platform.getStats().getStat("trans/sec"))
 					+ " transactions per second for member " + selfId + "\n\n"
 					+ " count  ticker  price change  change%  seller->buyer");
 			long lastSeq = state.getNumTrades();
@@ -153,9 +143,6 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SwirldState newState() {
 		return new CryptocurrencyDemoState();

@@ -20,7 +20,9 @@ import com.swirlds.platform.*;
  * all nodes.
  */
 public class FilesystemDemoMain implements SwirldMain {
+	/** the platform running this app */
 	public Platform platform;
+	/** the ID number for this platform */
 	private int platformId;
 
 	/**
@@ -35,9 +37,11 @@ public class FilesystemDemoMain implements SwirldMain {
 		Browser.main(null);
 	}
 
+	@Override
 	public void preEvent() {
 	}
 
+	@Override
 	public void init(Platform platform, int id) {
 		this.platform = platform;
 		this.platformId = id;
@@ -49,11 +53,12 @@ public class FilesystemDemoMain implements SwirldMain {
 	 * Start the text editor GUI. Then update its status bar every time the underlying filesystem is found
 	 * to have changed, indicating that files have arrived from the network (or local node).
 	 */
+	@Override
 	public void run() {
 		try {
 			TextEditor wp = TextEditor.openOn(platform);
 			byte[] fsHash = fsHash();
-			while (platform.isRunning()) {
+			while (true) {
 				Thread.sleep(1000);
 				byte[] newHash = fsHash();
 				if (!Arrays.equals(fsHash, newHash))
@@ -67,11 +72,12 @@ public class FilesystemDemoMain implements SwirldMain {
 		}
 	}
 
-	/** The hash of (the root directory of) the fast copyable filesystem */
+	/** @return The hash of (the root directory of) the fast copyable filesystem */
 	private byte[] fsHash() {
 		return ((FilesystemDemoState) platform.getState()).getFS().fcNamei("/");
 	}
 
+	@Override
 	public SwirldState newState() {
 		return new FilesystemDemoState();
 	}

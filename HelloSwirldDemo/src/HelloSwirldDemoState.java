@@ -33,38 +33,37 @@ import com.swirlds.platform.Utilities;
  * order that they were handled.
  */
 public class HelloSwirldDemoState implements SwirldState {
-	// The "state" is just a list of the strings in all transactions,
-	// listed in the order received here, which will eventually be
-	// the consensus order of the community.
+	/**
+	 * The shared state is just a list of the strings in all transactions, listed in the order received
+	 * here, which will eventually be the consensus order of the community.
+	 */
 	private List<String> strings = Collections
 			.synchronizedList(new ArrayList<String>());
+	/** names and addresses of all members */
 	private AddressBook addressBook;
 
+	/** @return all the strings received so far from the network */
 	public synchronized List<String> getStrings() {
 		return strings;
 	}
 
+	/** @return all the strings received so far from the network, concatenated into one */
 	public synchronized String getReceived() {
 		return strings.toString();
 	}
 
+	/** @return the same as getReceived, so it returns the entire shared state as a single string */
 	public String toString() {
 		return strings.toString();
 	}
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized FastCopyable copy() {
 		HelloSwirldDemoState copy = new HelloSwirldDemoState();
@@ -72,9 +71,6 @@ public class HelloSwirldDemoState implements SwirldState {
 		return copy;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyTo(FCDataOutputStream outStream) {
 		try {
@@ -85,9 +81,6 @@ public class HelloSwirldDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyFrom(FCDataInputStream inStream) {
 		try {
@@ -98,9 +91,6 @@ public class HelloSwirldDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void copyFrom(SwirldState old) {
 		strings = Collections.synchronizedList(
@@ -108,25 +98,16 @@ public class HelloSwirldDemoState implements SwirldState {
 		addressBook = ((HelloSwirldDemoState) old).addressBook.copy();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void handleTransaction(long id, boolean consensus,
 			Instant timeCreated, byte[] transaction, Address address) {
 		strings.add(new String(transaction, StandardCharsets.UTF_8));
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void freeze() {
+	public void noMoreTransactions() {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void init(Platform platform, AddressBook addressBook) {
 		this.addressBook = addressBook;

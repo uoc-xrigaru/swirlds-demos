@@ -25,52 +25,35 @@ import com.swirlds.platform.SwirldState;
  * The state for the hashgraph demo. See the comments for com.swirlds.demos.HashgraphDemoMain
  */
 public class HashgraphDemoState implements SwirldState {
+	/** all of names and addresses of members */
 	private AddressBook addressBook;
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void init(Platform platform, AddressBook addressBook) {
 		this.addressBook = addressBook;
 	};
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	};
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void copyFrom(SwirldState state) {
 		addressBook = ((HashgraphDemoState) state).addressBook;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void handleTransaction(long id, boolean isConsensus,
 			Instant timeCreated, byte[] trans, Address address) {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void freeze() {
+	public void noMoreTransactions() {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized FastCopyable copy() {
 		HashgraphDemoState copy = new HashgraphDemoState();
@@ -78,17 +61,11 @@ public class HashgraphDemoState implements SwirldState {
 		return copy;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyTo(FCDataOutputStream outStream) throws IOException {
 		addressBook.copyTo(outStream);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyFrom(FCDataInputStream inStream) throws IOException {
 		addressBook.copyFrom(inStream);

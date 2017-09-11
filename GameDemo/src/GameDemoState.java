@@ -28,81 +28,98 @@ import com.swirlds.platform.Utilities;
  * The state for the game demo. See the comments for GameDemoMain
  */
 public class GameDemoState implements SwirldState {
-	// In this app, we decided to make each transaction a single byte,
-	// which describes a movement by a player, as one of these 4:
+	/** code in transaction to move player one step north */
 	public static final byte TRANS_NORTH = 0;
+	/** code in transaction to move player one step south */
 	public static final byte TRANS_SOUTH = 1;
+	/** code in transaction to move player one step east */
 	public static final byte TRANS_EAST = 2;
+	/** code in transaction to move player one step west */
 	public static final byte TRANS_WEST = 3;
 
+	/** used to randomly move the target after a point is scored */
 	private RandomExtended random;
-	// for moving goals and players randomly
+	/** the names and addresses of all members */
 	private AddressBook addressBook;
-	// width of the board
+	/** width of the board, in cells */
 	private int xBoardSize = 10;
-	// height of the board
+	/** height of the board, in cells */
 	private int yBoardSize = 20;
-	// current coordinates of the goal
+	/** current x coordinate of the goal */
 	private int xGoal = 0;
+	/** current y coordinate of the goal */
 	private int yGoal = 0;
-	// sum of all players' scores
+	/** sum of all players' scores */
 	private int totalScore = 0;
-	// score for each player
+	/** score for each player */
 	private int score[];
-	// # transactions so far, per player
+	/** # transactions so far, per player */
 	private int numTrans[];
-	// coordinates of each player
+	/** x coordinate of each player */
 	private int xPlayer[];
+	/** y coordinate of each player */
 	private int yPlayer[];
-	// color of each player
+	/** color of each player */
 	private Color color[];
-	// color of the icon of the goal
+	/** color of the icon of the goal */
 	private Color colorGoal;
 
+	/** @return current board width, in cells */
 	public synchronized int getxBoardSize() {
 		return xBoardSize;
 	}
 
+	/** @return current board height, in cells */
 	public synchronized int getyBoardSize() {
 		return yBoardSize;
 	}
 
+	/** @return x coordinate of goal */
 	public synchronized int getxGoal() {
 		return xGoal;
 	}
 
+	/** @return y coordinate of goal */
 	public synchronized int getyGoal() {
 		return yGoal;
 	}
 
+	/** @return sum of all player scores */
 	public synchronized int getTotalScore() {
 		return totalScore;
 	}
 
+	/** @return score for each player */
 	public synchronized int[] getScore() {
 		return score;
 	}
 
+	/** @return number of transactions so far for each player */
 	public synchronized int[] getNumTrans() {
 		return numTrans;
 	}
 
+	/** @return x coordinate for each player */
 	public synchronized int[] getxPlayer() {
 		return xPlayer;
 	}
 
+	/** @return y coordinate for each player */
 	public synchronized int[] getyPlayer() {
 		return yPlayer;
 	}
 
+	/** @return color for each player */
 	public synchronized Color[] getColor() {
 		return color;
 	}
 
+	/** @return color of the goal */
 	public synchronized Color getColorGoal() {
 		return colorGoal;
 	}
 
+	/** @return the random number generator used to move the goal after each point is scored */
 	public synchronized RandomExtended getRandom() {
 		return random;
 	}
@@ -120,9 +137,6 @@ public class GameDemoState implements SwirldState {
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
 		int numMembers = addressBook.getSize();
@@ -151,17 +165,11 @@ public class GameDemoState implements SwirldState {
 		}
 	};
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public AddressBook getAddressBookCopy() {
 		return addressBook.copy();
 	};
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyFrom(SwirldState oldGameDemoState) {
 		GameDemoState old = (GameDemoState) oldGameDemoState;
@@ -180,13 +188,18 @@ public class GameDemoState implements SwirldState {
 		colorGoal = old.colorGoal;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void handleTransaction(long id, boolean isConsensus,
 			Instant timeCreated, byte[] trans, Address address) {
 		int mem = (int) id;
+
+		// You can make the consensus latency visible by making
+		// the goal jump around while it's deciding the consensus.
+		// You can do that by making the random number generator
+		// depend on the EXACT order of all the transactions.
+		// Do do that, uncomment the following line:
+
+		// random.absorbEntropy(mem + trans[0]);
 
 		numTrans[mem]++; // remember how many transactions handled for each member
 
@@ -212,8 +225,6 @@ public class GameDemoState implements SwirldState {
 
 		// handle a point being scored
 		if (xPlayer[mem] == xGoal && yPlayer[mem] == yGoal) {
-
-			random.absorbEntropy(mem); // goal location depends on who gets the point
 			score[mem]++;              // the winner gets a point
 			totalScore++;              // so the sum of everyon'es point increments
 			color[mem] = colorGoal;    // the winner's color changes to match the goal
@@ -221,19 +232,12 @@ public class GameDemoState implements SwirldState {
 			yGoal = random.nextInt(yBoardSize);
 			colorGoal = randColor();
 		}
-		random.absorbEntropy(mem + trans[0]); // goal location depends on all transactions
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void freeze() { // there aren't any threads to stop
+	public void noMoreTransactions() { // there aren't any threads to stop
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public FastCopyable copy() {
 		GameDemoState copy = new GameDemoState();
@@ -241,9 +245,6 @@ public class GameDemoState implements SwirldState {
 		return copy;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyTo(FCDataOutputStream outStream) {
 		try {
@@ -265,9 +266,6 @@ public class GameDemoState implements SwirldState {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void copyFrom(FCDataInputStream inStream) {
 		try {

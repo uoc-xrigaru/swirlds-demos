@@ -24,13 +24,13 @@ import com.swirlds.platform.SwirldState;
  * prints it, too.
  */
 public class HelloSwirldDemoMain implements SwirldMain {
-	// the app is run by this
+	/** the platform running this app */
 	public Platform platform;
-	// ID number for this member
+	/** ID number for this member */
 	public int selfId;
-	// a console window for text output
+	/** a console window for text output */
 	public Console console;
-	// sleep this many milliseconds after each sync
+	/** sleep this many milliseconds after each sync */
 	public final int sleepPeriod = 100;
 
 	/**
@@ -47,16 +47,10 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
 	// ///////////////////////////////////////////////////////////////////
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void preEvent() {
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void init(Platform platform, int id) {
 		this.platform = platform;
@@ -66,9 +60,6 @@ public class HelloSwirldDemoMain implements SwirldMain {
 		platform.setSleepAfterSync(sleepPeriod);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void run() {
 		String myName = platform.getState().getAddressBookCopy()
@@ -89,7 +80,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
 		platform.createTransaction(transaction, null);
 		String lastReceived = "";
 
-		while (platform.isRunning()) {
+		while (true) {
 			HelloSwirldDemoState state = (HelloSwirldDemoState) platform
 					.getState();
 			String received = state.getReceived();
@@ -105,9 +96,6 @@ public class HelloSwirldDemoMain implements SwirldMain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SwirldState newState() {
 		return new HelloSwirldDemoState();
